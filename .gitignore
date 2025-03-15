@@ -1,4 +1,5 @@
-venv 
+.venv
+.idea 
 
 amz_us_price_prediction_dataset.csv
 

@@ -1,7 +1,10 @@
 from pathlib import Path
 import pandas as pd
+import numpy as np
 import spacy
 from sklearn.preprocessing import OneHotEncoder
+from sklearn import __version__ as sklearn_version
+from packaging.version import Version
 from sklearn.feature_extraction.text import TfidfVectorizer, HashingVectorizer
 from tqdm import tqdm
 import pickle
@@ -24,7 +27,11 @@ class AmazonDataset:
         print("Kategorien werden verarbeitet...")
         unique_categories = self.df['category'].unique()
         self.cat2id = {cat: idx for idx, cat in enumerate(unique_categories)}
-        self.cat_encoder = OneHotEncoder(sparse=True)  # sparse Matrix verwenden
+        # Unterschiedliche Parameter je nach scikit-learn Version
+        if Version(sklearn_version) >= Version('1.2.0'):
+            self.cat_encoder = OneHotEncoder(sparse_output=True)  # neuere Versionen
+        else:
+            self.cat_encoder = OneHotEncoder(sparse=True)  # ältere Versionen
         cat_encoded = self.cat_encoder.fit_transform(self.df[['category']])
         best_encoded = sparse.csr_matrix(self.df['isBestSeller'].astype(int).values.reshape(-1, 1))
 

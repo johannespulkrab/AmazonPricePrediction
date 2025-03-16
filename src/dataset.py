@@ -1,44 +1,61 @@
 from pathlib import Path
 import pandas as pd
-import numpy as np
 import spacy
 from sklearn.preprocessing import OneHotEncoder
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, HashingVectorizer
 from tqdm import tqdm
 import pickle
-
+from scipy import sparse
 
 csv_path = Path('data/cleaned_amz_us_price_prediction_dataset.csv')
 
 nlp = spacy.load("en_core_web_sm")
 
+
 class AmazonDataset:
-    def __init__(self, path):
+    def __init__(self, path, use_hashing=True, n_features=100000, batch_size=10000):
         print("Daten werden geladen...")
         with open(path, 'r') as file:
             self.df = pd.read_csv(file)
 
+        self.batch_size = batch_size
+        self.y = self.df['price'].values  # Preise speichern, falls benötigt
+
         print("Kategorien werden verarbeitet...")
         unique_categories = self.df['category'].unique()
         self.cat2id = {cat: idx for idx, cat in enumerate(unique_categories)}
-        self.cat_encoder = OneHotEncoder(sparse_output=False)
+        self.cat_encoder = OneHotEncoder(sparse=True)  # sparse Matrix verwenden
         cat_encoded = self.cat_encoder.fit_transform(self.df[['category']])
-        best_encoded = self.df['isBestSeller'].astype(int).values.reshape(-1, 1)
+        best_encoded = sparse.csr_matrix(self.df['isBestSeller'].astype(int).values.reshape(-1, 1))
 
-        self.numerical_features = np.hstack((cat_encoded, best_encoded))
+        self.numerical_features = sparse.hstack((cat_encoded, best_encoded))
 
         print("Texte werden vorverarbeitet...")
-        # tqdm für die Textverarbeitung verwenden
         self.titles = []
         for title in tqdm(self.df['title'], desc="Textvorverarbeitung"):
             self.titles.append(self.preprocess_text(title))
 
-        print("TF-IDF Vektorisierung wird durchgeführt...")
-        self.tfidf = TfidfVectorizer(ngram_range=(1, 3), min_df=2, max_df=0.8)
-        self.text_features = self.tfidf.fit_transform(self.titles)
+        print("Text-Vektorisierung wird durchgeführt...")
+        if use_hashing:
+            # HashingVectorizer verwenden, um den Speicherbedarf zu reduzieren
+            self.vectorizer = HashingVectorizer(n_features=n_features, ngram_range=(1, 2))
+            self.text_features = self.vectorizer.transform(self.titles)
+        else:
+            # Oder TF-IDF mit reduzierten Parametern
+            self.vectorizer = TfidfVectorizer(
+                ngram_range=(1, 2),  # Auf Bi-Gramme beschränken
+                min_df=5,  # Höherer Schwellwert für min_df
+                max_df=0.5,  # Niedrigerer Schwellwert für max_df
+                max_features=n_features  # Begrenzte Anzahl von Features
+            )
+            self.text_features = self.vectorizer.fit_transform(self.titles)
 
-        print("Features werden kombiniert...")
-        self.X = self.combine_features()
+        print(f"Text Features Shape: {self.text_features.shape}")
+        print(f"Numerical Features Shape: {self.numerical_features.shape}")
+
+        # Wir speichern die Features separat und führen sie nicht zusammen
+        # Stattdessen verarbeiten wir sie später in Batches
+
         print("Verarbeitung abgeschlossen!")
 
     def preprocess_text(self, text):
@@ -47,19 +64,48 @@ class AmazonDataset:
                   if not token.is_punct and not token.is_space and not token.is_stop]
         return ' '.join(tokens)
 
-    def combine_features(self):
-        text_features_dense = self.text_features.toarray()
-        return np.hstack((text_features_dense, self.numerical_features))
+    def save_features(self, output_path):
+        """Speichert die Features in separaten Dateien"""
+        print("Speichere Features...")
+
+        # Speichere Text-Features in Batches
+        n_samples = self.text_features.shape[0]
+        n_batches = (n_samples + self.batch_size - 1) // self.batch_size
+
+        for i in tqdm(range(n_batches), desc="Speichere Text-Features"):
+            start_idx = i * self.batch_size
+            end_idx = min((i + 1) * self.batch_size, n_samples)
+
+            batch_features = self.text_features[start_idx:end_idx]
+
+            with open(f'{output_path}/text_features_batch_{i}.pkl', 'wb') as f:
+                pickle.dump(batch_features, f)
+
+        # Speichere numerische Features
+        with open(f'{output_path}/numerical_features.pkl', 'wb') as f:
+            pickle.dump(self.numerical_features, f)
+
+        # Speichere Metadaten
+        with open(f'{output_path}/metadata.pkl', 'wb') as f:
+            pickle.dump({
+                'vectorizer': self.vectorizer,
+                'cat_encoder': self.cat_encoder,
+                'cat2id': self.cat2id,
+                'n_samples': n_samples,
+                'n_batches': n_batches,
+                'batch_size': self.batch_size,
+                'y': self.y  # Preise speichern
+            }, f)
+
+        print(f"Features wurden in {output_path} gespeichert!")
+
 
 if __name__ == '__main__':
-    data = AmazonDataset(csv_path)
-    print(data.X.shape)
-    with open('data/processed_dataset.pkl', 'wb') as f:
-        pickle.dump({
-            'X': data.X,
-            'numerical_features': data.numerical_features,
-            'text_features': data.text_features,
-            'tfidf_vectorizer': data.tfidf,
-            'cat_encoder': data.cat_encoder,
-            'cat2id': data.cat2id
-        }, f)
+    output_dir = Path('data/processed')
+    output_dir.mkdir(exist_ok=True, parents=True)
+
+    # HashingVectorizer verwenden und Features auf 100.000 beschränken
+    data = AmazonDataset(csv_path, use_hashing=True, n_features=100000, batch_size=10000)
+    data.save_features(output_dir)
+
+    print("Verarbeitung abgeschlossen!")

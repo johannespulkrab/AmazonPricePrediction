@@ -1,6 +1,6 @@
 .venv
 .idea 
-
+.tree
 amz_us_price_prediction_dataset.csv
-
+data/
 cleaned_amz_us_price_prediction_dataset.csv

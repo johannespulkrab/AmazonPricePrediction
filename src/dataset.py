@@ -1,6 +1,5 @@
 from pathlib import Path
 import pandas as pd
-import numpy as np
 import spacy
 from sklearn.preprocessing import OneHotEncoder
 from sklearn import __version__ as sklearn_version
@@ -22,14 +21,13 @@ class AmazonDataset:
             self.df = pd.read_csv(file)
 
         self.batch_size = batch_size
-        self.y = self.df['price'].values  # Preise speichern, falls benötigt
+        self.y = self.df['price'].values
 
         print("Kategorien werden verarbeitet...")
         unique_categories = self.df['category'].unique()
         self.cat2id = {cat: idx for idx, cat in enumerate(unique_categories)}
-        # Unterschiedliche Parameter je nach scikit-learn Version
         if Version(sklearn_version) >= Version('1.2.0'):
-            self.cat_encoder = OneHotEncoder(sparse_output=True)  # neuere Versionen
+            self.cat_encoder = OneHotEncoder(sparse_output=True)
         else:
             self.cat_encoder = OneHotEncoder(sparse=True)  # ältere Versionen
         cat_encoded = self.cat_encoder.fit_transform(self.df[['category']])
@@ -44,24 +42,20 @@ class AmazonDataset:
 
         print("Text-Vektorisierung wird durchgeführt...")
         if use_hashing:
-            # HashingVectorizer verwenden, um den Speicherbedarf zu reduzieren
             self.vectorizer = HashingVectorizer(n_features=n_features, ngram_range=(1, 2))
             self.text_features = self.vectorizer.transform(self.titles)
         else:
-            # Oder TF-IDF mit reduzierten Parametern
             self.vectorizer = TfidfVectorizer(
-                ngram_range=(1, 2),  # Auf Bi-Gramme beschränken
-                min_df=5,  # Höherer Schwellwert für min_df
-                max_df=0.5,  # Niedrigerer Schwellwert für max_df
-                max_features=n_features  # Begrenzte Anzahl von Features
+                ngram_range=(1, 2),
+                min_df=5,
+                max_df=0.5,
+                max_features=n_features
             )
             self.text_features = self.vectorizer.fit_transform(self.titles)
 
         print(f"Text Features Shape: {self.text_features.shape}")
         print(f"Numerical Features Shape: {self.numerical_features.shape}")
 
-        # Wir speichern die Features separat und führen sie nicht zusammen
-        # Stattdessen verarbeiten wir sie später in Batches
 
         print("Verarbeitung abgeschlossen!")
 
@@ -72,10 +66,8 @@ class AmazonDataset:
         return ' '.join(tokens)
 
     def save_features(self, output_path):
-        """Speichert die Features in separaten Dateien"""
         print("Speichere Features...")
 
-        # Speichere Text-Features in Batches
         n_samples = self.text_features.shape[0]
         n_batches = (n_samples + self.batch_size - 1) // self.batch_size
 
@@ -111,7 +103,6 @@ if __name__ == '__main__':
     output_dir = Path('data/processed')
     output_dir.mkdir(exist_ok=True, parents=True)
 
-    # HashingVectorizer verwenden und Features auf 100.000 beschränken
     data = AmazonDataset(csv_path, use_hashing=True, n_features=100000, batch_size=10000)
     data.save_features(output_dir)
 

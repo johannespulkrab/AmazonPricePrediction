@@ -16,14 +16,14 @@ nlp = spacy.load("en_core_web_sm")
 
 class AmazonDataset:
     def __init__(self, path, use_hashing=True, n_features=100000, batch_size=10000):
-        print("Daten werden geladen...")
+        print("loading data...")
         with open(path, 'r') as file:
             self.df = pd.read_csv(file)
 
         self.batch_size = batch_size
         self.y = self.df['price'].values
 
-        print("Kategorien werden verarbeitet...")
+        print("processing categories...")
         unique_categories = self.df['category'].unique()
         self.cat2id = {cat: idx for idx, cat in enumerate(unique_categories)}
         if Version(sklearn_version) >= Version('1.2.0'):
@@ -35,12 +35,12 @@ class AmazonDataset:
 
         self.numerical_features = sparse.hstack((cat_encoded, best_encoded))
 
-        print("Texte werden vorverarbeitet...")
+        print("processing texts...")
         self.titles = []
         for title in tqdm(self.df['title'], desc="Textvorverarbeitung"):
             self.titles.append(self.preprocess_text(title))
 
-        print("Text-Vektorisierung wird durchgeführt...")
+        print("vectorizing texts...")
         if use_hashing:
             self.vectorizer = HashingVectorizer(n_features=n_features, ngram_range=(1, 2))
             self.text_features = self.vectorizer.transform(self.titles)
@@ -57,7 +57,7 @@ class AmazonDataset:
         print(f"Numerical Features Shape: {self.numerical_features.shape}")
 
 
-        print("Verarbeitung abgeschlossen!")
+        print("data processing done!")
 
     def preprocess_text(self, text):
         doc = nlp(text)
@@ -66,12 +66,12 @@ class AmazonDataset:
         return ' '.join(tokens)
 
     def save_features(self, output_path):
-        print("Speichere Features...")
+        print("saving features...")
 
         n_samples = self.text_features.shape[0]
         n_batches = (n_samples + self.batch_size - 1) // self.batch_size
 
-        for i in tqdm(range(n_batches), desc="Speichere Text-Features"):
+        for i in tqdm(range(n_batches), desc="saving textual features"):
             start_idx = i * self.batch_size
             end_idx = min((i + 1) * self.batch_size, n_samples)
 
@@ -96,7 +96,7 @@ class AmazonDataset:
                 'y': self.y  # Preise speichern
             }, f)
 
-        print(f"Features wurden in {output_path} gespeichert!")
+        print(f"Features were saved in {output_path}")
 
 
 if __name__ == '__main__':
@@ -106,4 +106,4 @@ if __name__ == '__main__':
     data = AmazonDataset(csv_path, use_hashing=True, n_features=100000, batch_size=10000)
     data.save_features(output_dir)
 
-    print("Verarbeitung abgeschlossen!")
+    print("data processing done")

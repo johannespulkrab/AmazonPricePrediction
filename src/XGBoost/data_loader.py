@@ -83,33 +83,71 @@ def load_amazon_data(processed_dir: str,
 def combine_features(numerical_features: np.ndarray, 
                      text_batches: Dict[int, np.ndarray],
                      metadata: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
-    logger.info('Executin the combination of numerical and text features')
+    logger.info('Executing the combination of numerical and text features')
     
     y = metadata.get('y', None)
     if y is None:
         raise ValueError('Target variable y not found in metadata')
     
+    # Debug info for numerical features
+    logger.info(f"Numerical features type: {type(numerical_features)}")
+    logger.info(f"Numerical features shape: {numerical_features.shape}")
+    logger.info(f"Numerical features ndim: {numerical_features.ndim}")
+    
+    # Combine text features
     text_features = []
     batch_indices = sorted(text_batches.keys())
-
     for batch_id in batch_indices:
         text_features.append(text_batches[batch_id])
-
+    
     combined_text = np.vstack(text_features)
     logger.info(f"Combined text features shape: {combined_text.shape}")
-
-    if numerical_features.ndim == 1:
-        numerical_features = numerical_features.reshape(-1, 1)
-
+    logger.info(f"Combined text features ndim: {combined_text.ndim}")
+    
+    # UNCONDITIONALLY convert numerical features to 2D
+    # This handles sparse matrices and regular arrays
+    try:
+        if hasattr(numerical_features, 'toarray'):  # For sparse matrices
+            numerical_features = numerical_features.toarray()
+            logger.info("Converted sparse matrix to numpy array")
+        
+        # Force reshape regardless of current dimensions
+        if numerical_features.ndim == 1:
+            numerical_features = numerical_features.reshape(-1, 1)
+            logger.info("Reshaped 1D array to 2D column vector")
+        elif numerical_features.ndim > 2:
+            # Handle higher dimensional arrays if they exist
+            original_shape = numerical_features.shape
+            numerical_features = numerical_features.reshape(original_shape[0], -1)
+            logger.info(f"Reshaped {original_shape} array to 2D matrix")
+            
+        logger.info(f"Final numerical features shape: {numerical_features.shape}")
+        logger.info(f"Final numerical features ndim: {numerical_features.ndim}")
+    except Exception as e:
+        logger.error(f"Error reshaping numerical features: {e}")
+        # Last resort: create a new array
+        if hasattr(numerical_features, '__len__'):
+            logger.info("Creating new array from original data")
+            numerical_features = np.array(numerical_features, ndmin=2).T
+    
+    # Ensure text features are 2D as well
     if combined_text.ndim == 1:
         combined_text = combined_text.reshape(-1, 1)
-
-    # Combination of numerical and text features 
-    X = np.hstack([numerical_features, combined_text])
-    logger.info(f"Final combined features shape: {X.shape}")
-
+    
+    # Attempt to combine with detailed error information
+    try:
+        logger.info(f"Attempting to combine arrays with shapes: {numerical_features.shape} and {combined_text.shape}")
+        X = np.hstack([numerical_features, combined_text])
+        logger.info(f"Final combined features shape: {X.shape}")
+    except ValueError as e:
+        logger.error(f"Hstack error: {e}")
+        logger.error(f"Numerical features: type={type(numerical_features)}, shape={numerical_features.shape}, ndim={numerical_features.ndim}")
+        logger.error(f"Text features: type={type(combined_text)}, shape={combined_text.shape}, ndim={combined_text.ndim}")
+        raise
+    
+    # Check if X and y have matching first dimension
     if len(X) != len(y):
-        raise ValueError(F'Feature matrix shape {X.shape} does not match target verctor shape {y.shape}')
+        raise ValueError(f"Feature matrix shape {X.shape} does not match target vector shape {y.shape}")
     
     return X, y
 

@@ -1,0 +1,14 @@
+2025-05-09 20:45:59,710 - __main__ - INFO - Starting Amazon Price Prediction training
+2025-05-09 20:45:59,710 - __main__ - INFO - Arguments: Namespace(processed_dir='./data/processed', max_batches=None, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15, tune_hyperparams=True, subset_for_tuning=True, n_trials=30, early_stopping_rounds=50, output_dir='./outputs/xgboost_model', seed=42)
+2025-05-09 20:45:59,711 - __main__ - INFO - Loading data from ./data/processed
+2025-05-09 20:46:00,099 - __main__ - ERROR - Error during training: all the input arrays must have same number of dimensions, but the array at index 0 has 1 dimension(s) and the array at index 1 has 2 dimension(s)
+Traceback (most recent call last):
+  File "/mnt/nvme/home/mlt_ml1/AmazonPricePrediction/src/XGBoost/train.py", line 77, in main
+    data = load_and_prepare_data(
+  File "/mnt/nvme/home/mlt_ml1/AmazonPricePrediction/src/XGBoost/data_loader.py", line 156, in load_and_prepare_data
+    X, y = combine_features(data['numerical_features'], data['text_batches'], data['metadata'])
+  File "/mnt/nvme/home/mlt_ml1/AmazonPricePrediction/src/XGBoost/data_loader.py", line 108, in combine_features
+    X = np.hstack([numerical_features, combined_text])
+  File "/mnt/nvme/home/mlt_ml1/AmazonPricePrediction/.venv/lib/python3.10/site-packages/numpy/_core/shape_base.py", line 365, in hstack
+    return _nx.concatenate(arrs, 0, dtype=dtype, casting=casting)
+ValueError: all the input arrays must have same number of dimensions, but the array at index 0 has 1 dimension(s) and the array at index 1 has 2 dimension(s)

@@ -33,21 +33,34 @@ def load_pickle(file_path: str) -> Any:
 
 
 
-def load_text_feature_batches(processed_dir: str, batch_pattern: str = 'text_features_batch_*.pkl') -> Dict[int, Any]:
+def load_text_feature_batches(processed_dir: str, batch_pattern: str = 'text_features_batch_*.pkl') -> Dict[int, np.ndarray]:
     logger.info(f'Loading data {processed_dir}')
     batches = {}
 
     try:
-        batch_files = glob.glob(os.path.join(processed_dir, batch_pattern)) # Finds files matching pattern
+        batch_files = glob.glob(os.path.join(processed_dir, batch_pattern)) 
         batch_files.sort()
 
         logger.info(f'Found {len(batch_files)} text feature batch files')
 
-        for file_path in batch_files:
-            batch_id = int(os.path.basename(file_path).split('_')[-1].split('.')[0])
-            batches[batch_id] = load_pickle(file_path)
+        # Debug the content of the first batch
+        if batch_files:
+            first_batch = load_pickle(batch_files[0])
+            logger.info(f"First batch type: {type(first_batch)}")
+            logger.info(f"First batch shape: {first_batch.shape if hasattr(first_batch, 'shape') else 'No shape attribute'}")
 
-        return batches
+        # Load all batches
+        all_batches = []
+        for file_path in batch_files:
+            batch_data = load_pickle(file_path)
+            all_batches.append(batch_data)
+            
+        # Now combine all batches into a single array
+        combined_text = np.vstack(all_batches)
+        logger.info(f"Combined all batches directly: {combined_text.shape}")
+        
+        # Return as a single entry (not as a dict of batches)
+        return combined_text
     except Exception as e:
         logger.error(f'Error {e}')
         raise
@@ -56,8 +69,7 @@ def load_text_feature_batches(processed_dir: str, batch_pattern: str = 'text_fea
 def load_amazon_data(processed_dir: str, 
                     metadata_file: str = 'metadata.pkl',
                     numerical_file: str = 'numerical_features.pkl',
-                    text_batch_pattern: str = 'text_features_batch_*.pkl',
-                    max_batches: Optional[int] = None) -> Dict[str, Any]:
+                    text_batch_pattern: str = 'text_features_batch_*.pkl'):
     logger.info(f'Loading all files from {processed_dir}')
 
     metadata_path = os.path.join(processed_dir, metadata_file)
@@ -66,22 +78,17 @@ def load_amazon_data(processed_dir: str,
     numerical_path = os.path.join(processed_dir, numerical_file)
     numerical_features = load_pickle(numerical_path)
 
-    text_batches = load_text_feature_batches(processed_dir, text_batch_pattern)
+    # Now text_features is already combined
+    text_features = load_text_feature_batches(processed_dir, text_batch_pattern)
 
-
-    if max_batches is not None and max_batches > 0:
-        batch_ids = sorted(list(text_batches.keys()))[:max_batches]
-        text_batches = {k: text_batches[k] for k in batch_ids}
-        logger.info(f"Limited to {len(text_batches)} text feature batches for debugging")
-    
     return {
         'metadata': metadata,
         'numerical_features': numerical_features,
-        'text_batches': text_batches
+        'text_features': text_features  # Changed from text_batches to text_features
     }
 
 def combine_features(numerical_features: np.ndarray, 
-                     text_batches: Dict[int, np.ndarray],
+                     text_features: np.ndarray,  # Changed from text_batches to text_features
                      metadata: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
     logger.info('Executing the combination of numerical and text features')
     
@@ -92,58 +99,21 @@ def combine_features(numerical_features: np.ndarray,
     # Debug info for numerical features
     logger.info(f"Numerical features type: {type(numerical_features)}")
     logger.info(f"Numerical features shape: {numerical_features.shape}")
-    logger.info(f"Numerical features ndim: {numerical_features.ndim}")
     
-    # Combine text features
-    text_features = []
-    batch_indices = sorted(text_batches.keys())
-    for batch_id in batch_indices:
-        text_features.append(text_batches[batch_id])
+    # Debug info for text features
+    logger.info(f"Text features type: {type(text_features)}")
+    logger.info(f"Text features shape: {text_features.shape}")
     
-    combined_text = np.vstack(text_features)
-    logger.info(f"Combined text features shape: {combined_text.shape}")
-    logger.info(f"Combined text features ndim: {combined_text.ndim}")
+    # Convert sparse matrix to dense if needed
+    if hasattr(numerical_features, 'toarray'):
+        numerical_features = numerical_features.toarray()
+        logger.info("Converted sparse matrix to numpy array")
+        logger.info(f"Numerical features shape after conversion: {numerical_features.shape}")
     
-    # UNCONDITIONALLY convert numerical features to 2D
-    # This handles sparse matrices and regular arrays
-    try:
-        if hasattr(numerical_features, 'toarray'):  # For sparse matrices
-            numerical_features = numerical_features.toarray()
-            logger.info("Converted sparse matrix to numpy array")
-        
-        # Force reshape regardless of current dimensions
-        if numerical_features.ndim == 1:
-            numerical_features = numerical_features.reshape(-1, 1)
-            logger.info("Reshaped 1D array to 2D column vector")
-        elif numerical_features.ndim > 2:
-            # Handle higher dimensional arrays if they exist
-            original_shape = numerical_features.shape
-            numerical_features = numerical_features.reshape(original_shape[0], -1)
-            logger.info(f"Reshaped {original_shape} array to 2D matrix")
-            
-        logger.info(f"Final numerical features shape: {numerical_features.shape}")
-        logger.info(f"Final numerical features ndim: {numerical_features.ndim}")
-    except Exception as e:
-        logger.error(f"Error reshaping numerical features: {e}")
-        # Last resort: create a new array
-        if hasattr(numerical_features, '__len__'):
-            logger.info("Creating new array from original data")
-            numerical_features = np.array(numerical_features, ndmin=2).T
-    
-    # Ensure text features are 2D as well
-    if combined_text.ndim == 1:
-        combined_text = combined_text.reshape(-1, 1)
-    
-    # Attempt to combine with detailed error information
-    try:
-        logger.info(f"Attempting to combine arrays with shapes: {numerical_features.shape} and {combined_text.shape}")
-        X = np.hstack([numerical_features, combined_text])
-        logger.info(f"Final combined features shape: {X.shape}")
-    except ValueError as e:
-        logger.error(f"Hstack error: {e}")
-        logger.error(f"Numerical features: type={type(numerical_features)}, shape={numerical_features.shape}, ndim={numerical_features.ndim}")
-        logger.error(f"Text features: type={type(combined_text)}, shape={combined_text.shape}, ndim={combined_text.ndim}")
-        raise
+    # Attempt to combine
+    logger.info(f"Attempting to combine arrays with shapes: {numerical_features.shape} and {text_features.shape}")
+    X = np.hstack([numerical_features, text_features])
+    logger.info(f"Final combined features shape: {X.shape}")
     
     # Check if X and y have matching first dimension
     if len(X) != len(y):
@@ -186,15 +156,20 @@ def load_and_prepare_data(processed_dir: str,
                          train_ratio: float = 0.7, 
                          val_ratio: float = 0.15,
                          test_ratio: float = 0.15,
-                         random_state: int = 42,
-                         max_batches: Optional[int] = None) -> Dict[str, np.ndarray]:
-
-    data = load_amazon_data(processed_dir, max_batches=max_batches)
-
-    X, y = combine_features(data['numerical_features'], data['text_batches'], data['metadata'])
-
+                         random_state: int = 42) -> Dict[str, np.ndarray]:
+    # Load all data components
+    data = load_amazon_data(processed_dir)
+    
+    # Combine features and get target
+    X, y = combine_features(
+        data['numerical_features'], 
+        data['text_features'],  # Changed from text_batches to text_features
+        data['metadata']
+    )
+    
+    # Split data
     data_splits = split_data(X, y, train_ratio, val_ratio, test_ratio, random_state)
-
+    
     return data_splits
 
 if __name__ == "__main__":

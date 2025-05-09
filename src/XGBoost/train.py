@@ -9,9 +9,9 @@ import time
 from typing import Any, Dict
 from tqdm import tqdm
 
-from src.XGBoost.data_loader import load_and_prepare_data
-from src.XGBoost.model import XGBoostRegressor
-from src.XGBoost.tuner import OptunaHyperparameterTuner
+from data_loader import load_and_prepare_data
+from model import XGBoostRegressor
+from tuner import OptunaHyperparameterTuner
 
 
 logging.basicConfig(
@@ -215,4 +215,3 @@ if __name__ == "__main__":
     main()
 
 
-    

@@ -94,3 +94,10 @@ wheel==0.42.0
 xdg==5
 xkit==0.0.0
 yarl==1.13.1
+xgboost==2.0.0 
+numpy
+pandas
+scikit-learn
+optuna  
+matplotlib 
+seaborn     

@@ -12,3 +12,66 @@ Traceback (most recent call last):
   File "/mnt/nvme/home/mlt_ml1/AmazonPricePrediction/.venv/lib/python3.10/site-packages/numpy/_core/shape_base.py", line 365, in hstack
     return _nx.concatenate(arrs, 0, dtype=dtype, casting=casting)
 ValueError: all the input arrays must have same number of dimensions, but the array at index 0 has 1 dimension(s) and the array at index 1 has 2 dimension(s)
+2025-05-09 21:10:20,457 - __main__ - INFO - Starting Amazon Price Prediction training
+2025-05-09 21:10:20,457 - __main__ - INFO - Arguments: Namespace(processed_dir='./data/processed', max_batches=None, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15, tune_hyperparams=True, subset_for_tuning=True, n_trials=50, early_stopping_rounds=50, output_dir='./outputs/xgboost_model', seed=42)
+2025-05-09 21:10:20,458 - __main__ - INFO - Loading data from ./data/processed
+2025-05-09 21:10:20,458 - __main__ - ERROR - Error during training: load_and_prepare_data() got an unexpected keyword argument 'max_batches'
+Traceback (most recent call last):
+  File "/mnt/nvme/home/mlt_ml1/AmazonPricePrediction/src/XGBoost/train.py", line 77, in main
+    data = load_and_prepare_data(
+TypeError: load_and_prepare_data() got an unexpected keyword argument 'max_batches'
+2025-05-09 21:14:18,951 - __main__ - INFO - Starting Amazon Price Prediction training
+2025-05-09 21:14:18,951 - __main__ - INFO - Arguments: Namespace(processed_dir='./data/processed', train_ratio=0.7, val_ratio=0.15, test_ratio=0.15, tune_hyperparams=True, subset_for_tuning=True, n_trials=50, early_stopping_rounds=50, output_dir='./outputs/xgboost_model', seed=42)
+2025-05-09 21:14:18,952 - __main__ - INFO - Loading data from ./data/processed
+2025-05-09 21:14:20,146 - __main__ - INFO - Data loaded successfully. Train: (1188358, 100237), Val: (254648, 100237), Test: (254649, 100237)
+2025-05-09 21:14:20,867 - __main__ - INFO - Data splits saved to ./outputs/xgboost_model/data_splits.pkl
+2025-05-09 21:14:20,868 - __main__ - INFO - Running hyperparameter tuning with Optuna
+2025-05-09 21:14:20,868 - __main__ - INFO - Using subset of data for faster hyperparameter tuning
+2025-05-09 21:14:20,868 - __main__ - ERROR - Error during training: sparse array length is ambiguous; use getnnz() or shape[0]
+Traceback (most recent call last):
+  File "/mnt/nvme/home/mlt_ml1/AmazonPricePrediction/src/XGBoost/train.py", line 106, in main
+    subset_size = len(X_train) // 2
+  File "/mnt/nvme/home/mlt_ml1/AmazonPricePrediction/.venv/lib/python3.10/site-packages/scipy/sparse/_base.py", line 425, in __len__
+    raise TypeError("sparse array length is ambiguous; use getnnz()"
+TypeError: sparse array length is ambiguous; use getnnz() or shape[0]
+2025-05-09 21:16:48,831 - __main__ - INFO - Starting Amazon Price Prediction training
+2025-05-09 21:16:48,831 - __main__ - INFO - Arguments: Namespace(processed_dir='./data/processed', train_ratio=0.7, val_ratio=0.15, test_ratio=0.15, tune_hyperparams=True, subset_for_tuning=True, n_trials=50, early_stopping_rounds=50, output_dir='./outputs/xgboost_model', seed=42)
+2025-05-09 21:16:48,832 - __main__ - INFO - Loading data from ./data/processed
+2025-05-09 21:16:50,056 - __main__ - INFO - Data loaded successfully. Train: (1188358, 100237), Val: (254648, 100237), Test: (254649, 100237)
+2025-05-09 21:16:51,392 - __main__ - INFO - Data splits saved to ./outputs/xgboost_model/data_splits.pkl
+2025-05-09 21:16:51,393 - __main__ - INFO - Running hyperparameter tuning with Optuna
+2025-05-09 21:16:51,393 - __main__ - INFO - Using subset of data for faster hyperparameter tuning
+2025-05-09 21:16:51,574 - __main__ - INFO - Tuning on subset - Train: (594179, 100237), Val: (127324, 100237)
+2025-05-09 21:16:51,575 - __main__ - ERROR - Error during training: 'OptunaHyperparameterTuner' object has no attribute '_default_param_space'
+Traceback (most recent call last):
+  File "/mnt/nvme/home/mlt_ml1/AmazonPricePrediction/src/XGBoost/train.py", line 120, in main
+    tuner = OptunaHyperparameterTuner(n_trials=args.n_trials)
+  File "/mnt/nvme/home/mlt_ml1/AmazonPricePrediction/src/XGBoost/tuner.py", line 28, in __init__
+    self.param_space = param_space or self._default_param_space()
+AttributeError: 'OptunaHyperparameterTuner' object has no attribute '_default_param_space'
+2025-05-09 21:17:53,922 - __main__ - INFO - Starting Amazon Price Prediction training
+2025-05-09 21:17:53,922 - __main__ - INFO - Arguments: Namespace(processed_dir='./data/processed', train_ratio=0.7, val_ratio=0.15, test_ratio=0.15, tune_hyperparams=True, subset_for_tuning=True, n_trials=50, early_stopping_rounds=50, output_dir='./outputs/xgboost_model', seed=42)
+2025-05-09 21:17:53,923 - __main__ - INFO - Loading data from ./data/processed
+2025-05-09 21:17:55,117 - __main__ - INFO - Data loaded successfully. Train: (1188358, 100237), Val: (254648, 100237), Test: (254649, 100237)
+2025-05-09 21:17:56,421 - __main__ - INFO - Data splits saved to ./outputs/xgboost_model/data_splits.pkl
+2025-05-09 21:17:56,421 - __main__ - INFO - Running hyperparameter tuning with Optuna
+2025-05-09 21:17:56,422 - __main__ - INFO - Using subset of data for faster hyperparameter tuning
+2025-05-09 21:17:56,587 - __main__ - INFO - Tuning on subset - Train: (594179, 100237), Val: (127324, 100237)
+2025-05-09 21:17:56,588 - __main__ - ERROR - Error during training: 'OptunaHyperparameterTuner' object has no attribute '_default_param_space'
+Traceback (most recent call last):
+  File "/mnt/nvme/home/mlt_ml1/AmazonPricePrediction/src/XGBoost/train.py", line 120, in main
+    tuner = OptunaHyperparameterTuner(n_trials=args.n_trials)
+  File "/mnt/nvme/home/mlt_ml1/AmazonPricePrediction/src/XGBoost/tuner.py", line 28, in __init__
+    self.param_space = param_space or self._default_param_space()
+AttributeError: 'OptunaHyperparameterTuner' object has no attribute '_default_param_space'
+2025-05-09 21:23:55,207 - __main__ - INFO - Starting Amazon Price Prediction training
+2025-05-09 21:23:55,207 - __main__ - INFO - Arguments: Namespace(processed_dir='./data/processed', train_ratio=0.7, val_ratio=0.15, test_ratio=0.15, tune_hyperparams=True, subset_for_tuning=True, n_trials=50, early_stopping_rounds=50, output_dir='./outputs/xgboost_model', seed=42)
+2025-05-09 21:23:55,209 - __main__ - INFO - Loading data from ./data/processed
+2025-05-09 21:23:56,377 - __main__ - INFO - Data loaded successfully. Train: (1188358, 100237), Val: (254648, 100237), Test: (254649, 100237)
+2025-05-09 21:23:57,652 - __main__ - INFO - Data splits saved to ./outputs/xgboost_model/data_splits.pkl
+2025-05-09 21:23:57,653 - __main__ - INFO - Running hyperparameter tuning with Optuna
+2025-05-09 21:23:57,653 - __main__ - INFO - Using subset of data for faster hyperparameter tuning
+2025-05-09 21:23:57,816 - __main__ - INFO - Tuning on subset - Train: (594179, 100237), Val: (127324, 100237)
+2025-05-09 21:23:58,202 - __main__ - ERROR - Error during training: train() got an unexpected keyword argument 'eval_results'
+Traceback (most recent call last):
+  File "/mnt/nvm

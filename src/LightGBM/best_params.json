@@ -1,0 +1,8 @@
+{
+  "n_estimators": 637,
+  "learning_rate": 0.04616828428110511,
+  "num_leaves": 43,
+  "max_depth": 8,
+  "min_data_in_leaf": 50,
+  "feature_fraction": 0.7674657482819991
+}

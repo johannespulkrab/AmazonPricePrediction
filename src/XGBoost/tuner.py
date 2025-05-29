@@ -25,7 +25,7 @@ class OptunaHyperparameterTuner:
                  study_name='xgboost_optimization',
                  direction='minimize',
                  metric='rmse'):
-        self.param_space = param_space or self._default_param_space()
+        self.param_space = param_space or self.default_param_space()
         self.n_trials = n_trials
         self.timeout = timeout
         self.study_name = study_name
@@ -103,80 +103,5 @@ class OptunaHyperparameterTuner:
             'random_state': 42
         })
         
-        logger.info(f"Optimization completed. Best value: {self.study.best_value}")
-        logger.info(f"Best parameters: {self.best_params}")
-        
-        return self.best_params
-    
-    def save_study(self, file_path: str) -> None:
-        
-        if self.study is None:
-            raise ValueError("No study to save. Run optimize() first.")
-        
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            
-        logger.info(f"Saving Optuna study to {file_path}")
-        with open(file_path, 'wb') as f:
-            pickle.dump(self.study, f)
-    
-    def load_study(self, file_path: str) -> None:
-       
-        logger.info(f"Loading Optuna study from {file_path}")
-        with open(file_path, 'rb') as f:
-            self.study = pickle.load(f)
-            
-        self.best_params = self.study.best_params
-        self.best_params.update({
-            'objective': 'reg:squarederror',
-            'eval_metric': 'rmse',
-            'random_state': 42
-        })
-    
-    def get_best_model(self) -> XGBoostRegressor:
-       
-        if self.best_params is None:
-            raise ValueError("No best parameters available. Run optimize() first.")
-            
-        return XGBoostRegressor(self.best_params)
-
-
-if __name__ == "__main__":
-    # Testing the Optuna tuner
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='Test Optuna hyperparameter tuning for XGBoost')
-    parser.add_argument('--data_path', type=str, required=True, help='Path to data file')
-    parser.add_argument('--output_path', type=str, default='./models/', help='Path to save results')
-    parser.add_argument('--n_trials', type=int, default=30, help='Number of Optuna trials')
-    
-    args = parser.parse_args()
-    
-    try:
-        with open(args.data_path, 'rb') as f:
-            data = pickle.load(f)
-        
-        X_train = data.get('X_train')
-        y_train = data.get('y_train')
-        X_val = data.get('X_val')
-        y_val = data.get('y_val')
-        
-        if X_train is not None and y_train is not None and X_val is not None and y_val is not None:
-            tuner = OptunaHyperparameterTuner(n_trials=args.n_trials)
-            best_params = tuner.optimize(X_train, y_train, X_val, y_val)
-            
-            os.makedirs(args.output_path, exist_ok=True)
-            study_path = os.path.join(args.output_path, 'optuna_study.pkl')
-            tuner.save_study(study_path)
-            
-            model = tuner.get_best_model()
-            model.train(X_train, y_train, X_val, y_val)
-            model.save_model(os.path.join(args.output_path, 'best_model.json'))
-            
-            logger.info(f"Study saved to {study_path}")
-            logger.info(f"Best model saved to {os.path.join(args.output_path, 'best_model.json')}")
-        else:
-            logger.error("Data doesn't contain required training and validation sets")
-    except Exception as e:
-        logger.error(f"Error in Optuna tuning: {e}")
-
-        
+        #print("Optimization completed. Best value: {}".format(self.study.best_value))
+        #print('Best paramet

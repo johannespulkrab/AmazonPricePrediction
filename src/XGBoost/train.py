@@ -27,8 +27,6 @@ def parse_args():
     
     parser.add_argument('--processed_dir', type=str, required=True,
                        help='Directory containing processed data files')
-    parser.add_argument('--max_batches', type=int, default=None,
-                       help='Maximum number of text feature batches to load (None for all)')
     parser.add_argument('--train_ratio', type=float, default=0.7,
                        help='Proportion of data for training')
     parser.add_argument('--val_ratio', type=float, default=0.15,
@@ -79,8 +77,7 @@ def main():
                 train_ratio=args.train_ratio,
                 val_ratio=args.val_ratio,
                 test_ratio=args.test_ratio,
-                random_state=args.seed,
-                max_batches=args.max_batches
+                random_state=args.seed
             )
             
             X_train, y_train = data['X_train'], data['y_train']
@@ -106,14 +103,14 @@ def main():
                 if args.subset_for_tuning:
                     logger.info("Using subset of data for faster hyperparameter tuning")
                     
-                    subset_size = len(X_train) // 2
+                    subset_size = X_train.shape[0] // 2
                     rng = np.random.RandomState(args.seed)
-                    subset_indices = rng.choice(len(X_train), subset_size, replace=False)
+                    subset_indices = rng.choice(X_train.shape[0], subset_size, replace=False)
                     X_train_subset = X_train[subset_indices]
                     y_train_subset = y_train[subset_indices]
                     
-                    subset_val_size = len(X_val) // 2
-                    subset_val_indices = rng.choice(len(X_val), subset_val_size, replace=False)
+                    subset_val_size = X_val.shape[0] // 2
+                    subset_val_indices = rng.choice(X_val.shape[0], subset_val_size, replace=False)
                     X_val_subset = X_val[subset_val_indices]
                     y_val_subset = y_val[subset_val_indices]
                     

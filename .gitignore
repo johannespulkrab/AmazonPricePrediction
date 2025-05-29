@@ -4,3 +4,7 @@
 amz_us_price_prediction_dataset.csv
 data/
 cleaned_amz_us_price_prediction_dataset.csv
+
+archive
+
+__pycache__

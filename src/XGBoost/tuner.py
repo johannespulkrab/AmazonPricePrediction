@@ -1,107 +1,106 @@
-''' HP tuning'''
-
-import logging
-import numpy as np
-import xgboost as xgb
 import optuna
-import pickle
-import os
-from typing import Dict, Any, Optional
-from model import XGBoostRegressor
+import xgboost as xgb
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error
+import json
+from tqdm import tqdm
+from data_loader import load_and_prepare_data
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Load data
+X, y = load_and_prepare_data(force_rebuild=False)
 
+# Use only 50% of the dataset for faster hyperparameter tuning
+X_subset, _, y_subset, _ = train_test_split(X, y, test_size=0.5, random_state=42)
+print(f"Using subset: {X_subset.shape[0]} samples (50% of original {X.shape[0]})")
 
-class OptunaHyperparameterTuner:
+# Split subset: 75% for training, 25% for final test
+X_train_val, X_test, y_train_val, y_test = train_test_split(X_subset, y_subset, test_size=0.25, random_state=42)
 
-    def __init__(self,
-                 param_space: Optional[Dict[str, Any]]=None,
-                 n_trials=30,
-                 timeout: Optional[int]=None,
-                 study_name='xgboost_optimization',
-                 direction='minimize',
-                 metric='rmse'):
-        self.param_space = param_space or self.default_param_space()
-        self.n_trials = n_trials
-        self.timeout = timeout
-        self.study_name = study_name
-        self.direction = direction
-        self.metric = metric
-        self.study = None
-        self.best_params = None
+# Split training data: 75% train, 25% validation (for hyperparameter tuning)
+X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, test_size=0.25, random_state=42)
 
-        logger.info(f"Initialized Optuna tuner with {n_trials} trials, direction: {direction}, metric: {metric}")
+PARAMS_OUT = 'best_params_xgb.json'
 
-    def default_param_space(self):
+# Progress tracking
+pbar = None
+trial_count = 0
 
-        return {
-            'learning_rate': (0.01, 0.3),
-            'max_depth': (3, 12),
-            'min_child_weight': (1, 10),
-            'subsample': (0.5, 1.0),
-            'colsample_bytree': (0.5, 1.0),
-            'gamma': (0, 5),
-            'alpha': (0, 10),
-            'lambda': (0, 10),
-            'n_estimators': (50, 500)
-        }
-
-    def _objective(self, trial: optuna.Trial, X_train: np.ndarray, y_train: np.ndarray, 
-                  X_val: np.ndarray, y_val: np.ndarray) -> float:
-        
-        params = {
-            'objective': 'reg:squarederror',
-            'eval_metric': 'rmse',
-            'learning_rate': trial.suggest_float('learning_rate', 
-                                              *self.param_space['learning_rate']),
-            'max_depth': trial.suggest_int('max_depth', 
-                                        *self.param_space['max_depth']),
-            'min_child_weight': trial.suggest_int('min_child_weight', 
-                                               *self.param_space['min_child_weight']),
-            'subsample': trial.suggest_float('subsample', 
-                                          *self.param_space['subsample']),
-            'colsample_bytree': trial.suggest_float('colsample_bytree', 
-                                                 *self.param_space['colsample_bytree']),
-            'gamma': trial.suggest_float('gamma', 
-                                      *self.param_space['gamma']),
-            'alpha': trial.suggest_float('alpha', 
-                                      *self.param_space['alpha']),
-            'lambda': trial.suggest_float('lambda', 
-                                       *self.param_space['lambda']),
-            'n_estimators': trial.suggest_int('n_estimators', 
-                                           *self.param_space['n_estimators']),
-            'random_state': 42
-        }
-        
-        model = XGBoostRegressor(params)
-        results = model.train(X_train, y_train, X_val, y_val, early_stopping_rounds=30, verbose=False)
-        
-        return results['val_rmse']
+def objective(trial):
+    global pbar, trial_count
     
-    def optimize(self, X_train: np.ndarray, y_train: np.ndarray, 
-                X_val: np.ndarray, y_val: np.ndarray) -> Dict[str, Any]:
-        
-        logger.info(f"Starting Optuna optimization with {self.n_trials} trials")
-        
-        self.study = optuna.create_study(direction=self.direction, study_name=self.study_name)
-        
-        self.study.optimize(
-            lambda trial: self._objective(trial, X_train, y_train, X_val, y_val),
-            n_trials=self.n_trials,
-            timeout=self.timeout
-        )
-        
-        # Get best parameters
-        self.best_params = self.study.best_params
-        self.best_params.update({
-            'objective': 'reg:squarederror',
-            'eval_metric': 'rmse',
-            'random_state': 42
+    params = {
+        'objective': 'reg:squarederror',
+        'eval_metric': 'mae',
+        'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3),
+        'max_depth': trial.suggest_int('max_depth', 3, 12),
+        'min_child_weight': trial.suggest_int('min_child_weight', 1, 10),
+        'subsample': trial.suggest_float('subsample', 0.5, 1.0),
+        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0),
+        'gamma': trial.suggest_float('gamma', 0, 5),
+        'alpha': trial.suggest_float('alpha', 0, 10),
+        'lambda': trial.suggest_float('lambda', 0, 10),
+        'n_estimators': trial.suggest_int('n_estimators', 50, 500),
+        'early_stopping_rounds': 30,
+        'random_state': 42,
+        'n_jobs': 2
+    }
+
+    # Create XGBoost model
+    model = xgb.XGBRegressor(**params)
+    
+    # Train with validation set
+    model.fit(
+        X_train, y_train,
+        eval_set=[(X_val, y_val)],
+        verbose=False
+    )
+    
+    # Predict and calculate MAE
+    preds = model.predict(X_val)
+    mae = mean_absolute_error(y_val, preds)
+    
+    # Update progress bar
+    trial_count += 1
+    if pbar is not None:
+        pbar.set_postfix({
+            'Trial': trial_count, 
+            'Current MAE': f'{mae:.3f}',
+            'Best MAE': f'{trial.study.best_value:.3f}' if trial.study.best_value else 'N/A'
         })
-        
-        #print("Optimization completed. Best value: {}".format(self.study.best_value))
-        #print('Best paramet
+        pbar.update(1)
+    
+    return mae
+
+if __name__ == "__main__":
+    print("Starting XGBoost hyperparameter optimization...")
+    print(f"Data shapes: X_train={X_train.shape}, X_val={X_val.shape}")
+    
+    # Initialize progress bar
+    pbar = tqdm(total=50, desc="Optimizing XGBoost", 
+                bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {postfix}]')
+    
+    # Create and run study
+    study = optuna.create_study(direction='minimize')
+    study.optimize(objective, n_trials=50)
+    
+    # Close progress bar
+    pbar.close()
+    
+    # Get best parameters
+    best_params = study.best_params
+    best_params.update({
+        'objective': 'reg:squarederror',
+        'eval_metric': 'mae',
+        'random_state': 42,
+        'n_jobs': 2
+    })
+    
+    print(f"\nOptimization completed!")
+    print(f"Best MAE: {study.best_value:.5f}")
+    print("Best hyperparameters:", study.best_params)
+    
+    # Save best parameters
+    with open(PARAMS_OUT, 'w') as f:
+        json.dump(best_params, f, indent=2)
+    
+    print(f"Best parameters saved to {PARAMS_OUT}")

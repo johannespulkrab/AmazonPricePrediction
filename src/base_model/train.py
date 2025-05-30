@@ -4,8 +4,10 @@ import pickle
 import json
 import time
 from pathlib import Path
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
-from data_loader import load_processed_data, prepare_data_splits
+from data_loader import load_processed_data
 from model import BaselineRegressor
 
 logging.basicConfig(
@@ -26,19 +28,34 @@ def parse_args():
     parser.add_argument('--alpha', type=float, default=1.0,
                         help='Regularization strength for Ridge/Lasso')
 
-    parser.add_argument('--train_ratio', type=float, default=0.7,
-                        help='Proportion of data for training')
-    parser.add_argument('--val_ratio', type=float, default=0.15,
-                        help='Proportion of data for validation')
-    parser.add_argument('--test_ratio', type=float, default=0.15,
-                        help='Proportion of data for testing')
-
     parser.add_argument('--output_dir', type=str, default='./outputs/baseline_model',
                         help='Directory to save outputs')
     parser.add_argument('--seed', type=int, default=42,
                         help='Random seed for reproducibility')
 
     return parser.parse_args()
+
+
+def prepare_data_splits_nested(X, y, random_state=42):
+    X_train_full, X_test, y_train_full, y_test = train_test_split(
+        X, y, test_size=0.1, random_state=random_state
+    )
+
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_train_full, y_train_full, test_size=0.25, random_state=random_state
+    )
+
+    scaler = StandardScaler(with_mean=False)
+    X_train = scaler.fit_transform(X_train)
+    X_val = scaler.transform(X_val)
+    X_test = scaler.transform(X_test)
+
+    return {
+        'X_train': X_train, 'y_train': y_train,
+        'X_val': X_val, 'y_val': y_val,
+        'X_test': X_test, 'y_test': y_test,
+        'scaler': scaler
+    }
 
 
 def main():
@@ -62,13 +79,7 @@ def main():
         logger.info(f"Loaded data with shape: X={X.shape}, y={y.shape}")
 
         logger.info("Preparing data splits...")
-        data_splits = prepare_data_splits(
-            X, y,
-            train_ratio=args.train_ratio,
-            val_ratio=args.val_ratio,
-            test_ratio=args.test_ratio,
-            random_state=args.seed
-        )
+        data_splits = prepare_data_splits_nested(X, y, random_state=args.seed)
 
         X_train = data_splits['X_train']
         y_train = data_splits['y_train']

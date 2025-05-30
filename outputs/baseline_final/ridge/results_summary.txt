@@ -1,0 +1,22 @@
+Amazon Price Prediction - Baseline Model Results
+==================================================
+
+Model Type: RIDGE
+Alpha (regularization): 1.0
+Training Time: 36.96 seconds
+Dataset Size: 1,697,655 samples, 100,237 features
+
+Training Metrics:
+  RMSE: 108.1487
+  MAE: 42.0610
+  R2: 0.2418
+
+Validation Metrics:
+  RMSE: 120.4308
+  MAE: 46.3790
+  R2: 0.0895
+
+Test Metrics:
+  RMSE: 132.6033
+  MAE: 46.3868
+  R2: 0.0892

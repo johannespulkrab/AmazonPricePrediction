@@ -1,0 +1,22 @@
+Amazon Price Prediction - Baseline Model Results
+==================================================
+
+Model Type: LASSO
+Alpha (regularization): 1.0
+Training Time: 800.21 seconds
+Dataset Size: 1,697,655 samples, 100,237 features
+
+Training Metrics:
+  RMSE: 113.6676
+  MAE: 34.1360
+  R2: 0.1625
+
+Validation Metrics:
+  RMSE: 115.9973
+  MAE: 34.2078
+  R2: 0.1553
+
+Test Metrics:
+  RMSE: 128.5058
+  MAE: 34.2087
+  R2: 0.1446

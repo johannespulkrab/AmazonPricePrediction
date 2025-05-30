@@ -1,0 +1,21 @@
+2025-05-30 22:26:20,596 - __main__ - INFO - Starting Amazon Price Prediction Baseline Training
+2025-05-30 22:26:20,597 - __main__ - INFO - Arguments: Namespace(processed_dir='../../data/processed', model_type='ridge', alpha=1.0, output_dir='../../outputs/baseline_final/ridge', seed=42)
+2025-05-30 22:26:20,597 - __main__ - INFO - Loading data from ../../data/processed
+2025-05-30 22:26:23,626 - __main__ - INFO - Loaded data with shape: X=(1697655, 100237), y=(1697655,)
+2025-05-30 22:26:23,626 - __main__ - INFO - Preparing data splits...
+2025-05-30 22:26:28,369 - __main__ - INFO - Data splits saved to ../../outputs/baseline_final/ridge/data_splits.pkl
+2025-05-30 22:26:28,370 - __main__ - INFO - Initializing ridge regression model
+2025-05-30 22:26:28,370 - __main__ - INFO - Training model...
+2025-05-30 22:26:57,540 - __main__ - INFO - Model saved to ../../outputs/baseline_final/ridge/ridge_model.pkl
+2025-05-30 22:26:57,543 - __main__ - INFO - Scaler saved to ../../outputs/baseline_final/ridge/scaler.pkl
+2025-05-30 22:26:57,543 - __main__ - INFO - Evaluating on test set...
+2025-05-30 22:26:57,559 - __main__ - INFO - Results saved to ../../outputs/baseline_final/ridge/results.json
+2025-05-30 22:26:57,560 - __main__ - INFO - Results summary saved to ../../outputs/baseline_final/ridge/results_summary.txt
+2025-05-30 22:26:57,560 - __main__ - INFO - ==================================================
+2025-05-30 22:26:57,560 - __main__ - INFO - Baseline training completed successfully
+2025-05-30 22:26:57,560 - __main__ - INFO - Model Type: ridge
+2025-05-30 22:26:57,560 - __main__ - INFO - Test RMSE: 132.6033
+2025-05-30 22:26:57,560 - __main__ - INFO - Test MAE: 46.3868
+2025-05-30 22:26:57,560 - __main__ - INFO - Test R²: 0.0892
+2025-05-30 22:26:57,560 - __main__ - INFO - Training time: 36.96 seconds
+2025-05-30 22:26:57,560 - __main__ - INFO - ==================================================

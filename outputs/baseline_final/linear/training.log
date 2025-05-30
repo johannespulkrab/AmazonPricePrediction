@@ -1,0 +1,21 @@
+2025-05-30 22:25:42,976 - __main__ - INFO - Starting Amazon Price Prediction Baseline Training
+2025-05-30 22:25:42,977 - __main__ - INFO - Arguments: Namespace(processed_dir='../../data/processed', model_type='linear', alpha=1.0, output_dir='../../outputs/baseline_final/linear', seed=42)
+2025-05-30 22:25:42,977 - __main__ - INFO - Loading data from ../../data/processed
+2025-05-30 22:25:45,607 - __main__ - INFO - Loaded data with shape: X=(1697655, 100237), y=(1697655,)
+2025-05-30 22:25:45,607 - __main__ - INFO - Preparing data splits...
+2025-05-30 22:25:48,572 - __main__ - INFO - Data splits saved to ../../outputs/baseline_final/linear/data_splits.pkl
+2025-05-30 22:25:48,573 - __main__ - INFO - Initializing linear regression model
+2025-05-30 22:25:48,573 - __main__ - INFO - Training model...
+2025-05-30 22:26:19,215 - __main__ - INFO - Model saved to ../../outputs/baseline_final/linear/linear_model.pkl
+2025-05-30 22:26:19,218 - __main__ - INFO - Scaler saved to ../../outputs/baseline_final/linear/scaler.pkl
+2025-05-30 22:26:19,218 - __main__ - INFO - Evaluating on test set...
+2025-05-30 22:26:19,239 - __main__ - INFO - Results saved to ../../outputs/baseline_final/linear/results.json
+2025-05-30 22:26:19,240 - __main__ - INFO - Results summary saved to ../../outputs/baseline_final/linear/results_summary.txt
+2025-05-30 22:26:19,240 - __main__ - INFO - ==================================================
+2025-05-30 22:26:19,240 - __main__ - INFO - Baseline training completed successfully
+2025-05-30 22:26:19,240 - __main__ - INFO - Model Type: linear
+2025-05-30 22:26:19,241 - __main__ - INFO - Test RMSE: 132.6033
+2025-05-30 22:26:19,241 - __main__ - INFO - Test MAE: 46.3868
+2025-05-30 22:26:19,241 - __main__ - INFO - Test R²: 0.0892
+2025-05-30 22:26:19,241 - __main__ - INFO - Training time: 36.26 seconds
+2025-05-30 22:26:19,241 - __main__ - INFO - ==================================================

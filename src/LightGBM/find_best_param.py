@@ -8,9 +8,14 @@ from data_preprocessing import load_or_assemble
 import json
 
 
-f
 
-X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, test_size=0.25, random_state=42)
+def train_and_save_model():
+    X, metadata, y = load_or_assemble(force_rebuild=False)
+
+X_train_full, X_test, y_train_full, y_test = train_test_split(
+    X, y, test_size=0.1, random_state=42
+)
+X_train, X_val, y_train, y_val = train_test_split(X_train_full, y_train_full, test_size=0.25, random_state=42)
 PARAMS_OUT = 'best_params.json'
 
 def objective(trial):

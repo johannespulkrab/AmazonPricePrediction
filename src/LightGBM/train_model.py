@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error
 
-MODEL_OUT_PATH  = '/home/mlt_ml1/AmazonPricePrediction/src/LightGBM/lgbm_final_model_1.pkl'
+MODEL_OUT_PATH  = '/home/mlt_ml1/AmazonPricePrediction/src/LightGBM/lgbm_final_model.pkl'
 
 with open('/home/mlt_ml1/AmazonPricePrediction/src/LightGBM/best_params.json') as f:
     best_params = json.load(f)
@@ -24,12 +24,12 @@ def train_and_save_model():
 
     # 1) final train/test split
     X_train_full, X_test, y_train_full, y_test = train_test_split(
-        X, y, test_size=0.25, random_state=42
+        X, y, test_size=0.1, random_state=42 #0.1
     )
 
     # 2) carve out a small validation set from the training block
     X_train, X_val, y_train, y_val = train_test_split(
-        X_train_full, y_train_full, test_size=0.1, random_state=42
+        X_train_full, y_train_full, test_size=0.25, random_state=42 #0.25
     )
 
     # 3) scale

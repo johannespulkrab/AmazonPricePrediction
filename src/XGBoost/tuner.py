@@ -9,9 +9,9 @@ from data_loader import load_and_prepare_data
 # Load data
 X, y = load_and_prepare_data(force_rebuild=False)
 
-# Use only 50% of the dataset for faster hyperparameter tuning
-X_subset, _, y_subset, _ = train_test_split(X, y, test_size=0.5, random_state=42)
-print(f"Using subset: {X_subset.shape[0]} samples (50% of original {X.shape[0]})")
+# Use only 30% of the dataset for much faster hyperparameter tuning
+X_subset, _, y_subset, _ = train_test_split(X, y, test_size=0.7, random_state=42)
+print(f"Using subset: {X_subset.shape[0]} samples (30% of original {X.shape[0]})")
 
 # Split subset: 75% for training, 25% for final test
 X_train_val, X_test, y_train_val, y_test = train_test_split(X_subset, y_subset, test_size=0.25, random_state=42)
@@ -32,23 +32,17 @@ def objective(trial):
         'objective': 'reg:squarederror',
         'eval_metric': 'mae',
         'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3),
-        'max_depth': trial.suggest_int('max_depth', 3, 12),
+        'max_depth': trial.suggest_int('max_depth', 3, 8),  # Reduced from 12 to 8
         'min_child_weight': trial.suggest_int('min_child_weight', 1, 10),
-        'subsample': trial.suggest_float('subsample', 0.5, 1.0),
-        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0),
-        'gamma': trial.suggest_float('gamma', 0, 5),
-        'alpha': trial.suggest_float('alpha', 0, 10),
-        'lambda': trial.suggest_float('lambda', 0, 10),
-        'n_estimators': trial.suggest_int('n_estimators', 50, 500),
-        'early_stopping_rounds': 30,
+        'subsample': trial.suggest_float('subsample', 0.7, 1.0),  # Narrowed range
+        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.7, 1.0),  # Narrowed range
+        'n_estimators': trial.suggest_int('n_estimators', 50, 200),  # Further reduced to compensate for no early stopping
         'random_state': 42,
-        'n_jobs': 2
+        'n_jobs': -1  # Use all available cores
     }
 
-    # Create XGBoost model
     model = xgb.XGBRegressor(**params)
     
-    # Train with validation set
     model.fit(
         X_train, y_train,
         eval_set=[(X_val, y_val)],
@@ -62,26 +56,45 @@ def objective(trial):
     # Update progress bar
     trial_count += 1
     if pbar is not None:
+        try:
+            best_mae = f'{trial.study.best_value:.3f}' if trial.study.best_value is not None else 'N/A'
+        except (ValueError, AttributeError):
+            best_mae = 'N/A'
+            
         pbar.set_postfix({
             'Trial': trial_count, 
             'Current MAE': f'{mae:.3f}',
-            'Best MAE': f'{trial.study.best_value:.3f}' if trial.study.best_value else 'N/A'
+            'Best MAE': best_mae
         })
         pbar.update(1)
     
     return mae
 
 if __name__ == "__main__":
-    print("Starting XGBoost hyperparameter optimization...")
+    print("Starting optimized XGBoost hyperparameter optimization...")
     print(f"Data shapes: X_train={X_train.shape}, X_val={X_val.shape}")
     
+    # Reduced number of trials for faster completion
+    n_trials = 20  # Reduced from 50 to 20
+    
     # Initialize progress bar
-    pbar = tqdm(total=50, desc="Optimizing XGBoost", 
+    pbar = tqdm(total=n_trials, desc="Optimizing XGBoost", 
                 bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {postfix}]')
     
-    # Create and run study
+    # Create and run study with error handling
     study = optuna.create_study(direction='minimize')
-    study.optimize(objective, n_trials=50)
+    
+    # Add some resilience to the optimization
+    try:
+        study.optimize(objective, n_trials=n_trials, n_jobs=1)
+    except Exception as e:
+        print(f"Optimization encountered an error: {e}")
+        print("Continuing with completed trials...")
+    
+    # Check if we have any successful trials
+    if len(study.trials) == 0 or study.best_value is None:
+        print("No successful trials completed!")
+        exit(1)
     
     # Close progress bar
     pbar.close()
@@ -92,7 +105,7 @@ if __name__ == "__main__":
         'objective': 'reg:squarederror',
         'eval_metric': 'mae',
         'random_state': 42,
-        'n_jobs': 2
+        'n_jobs': -1  # Use all cores for final model
     })
     
     print(f"\nOptimization completed!")

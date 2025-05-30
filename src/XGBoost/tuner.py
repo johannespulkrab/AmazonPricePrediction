@@ -32,13 +32,13 @@ def objective(trial):
         'objective': 'reg:squarederror',
         'eval_metric': 'mae',
         'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3),
-        'max_depth': trial.suggest_int('max_depth', 3, 8),  # Reduced from 12 to 8
+        'max_depth': trial.suggest_int('max_depth', 3, 8), 
         'min_child_weight': trial.suggest_int('min_child_weight', 1, 10),
-        'subsample': trial.suggest_float('subsample', 0.7, 1.0),  # Narrowed range
-        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.7, 1.0),  # Narrowed range
-        'n_estimators': trial.suggest_int('n_estimators', 50, 200),  # Further reduced to compensate for no early stopping
+        'subsample': trial.suggest_float('subsample', 0.7, 1.0), 
+        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.7, 1.0), 
+        'n_estimators': trial.suggest_int('n_estimators', 50, 200),
         'random_state': 42,
-        'n_jobs': -1  # Use all available cores
+        'n_jobs': -1 
     }
 
     model = xgb.XGBRegressor(**params)
@@ -49,11 +49,9 @@ def objective(trial):
         verbose=False
     )
     
-    # Predict and calculate MAE
     preds = model.predict(X_val)
     mae = mean_absolute_error(y_val, preds)
     
-    # Update progress bar
     trial_count += 1
     if pbar is not None:
         try:
@@ -74,14 +72,11 @@ if __name__ == "__main__":
     print("Starting optimized XGBoost hyperparameter optimization...")
     print(f"Data shapes: X_train={X_train.shape}, X_val={X_val.shape}")
     
-    # Reduced number of trials for faster completion
-    n_trials = 20  # Reduced from 50 to 20
+    n_trials = 20 
     
-    # Initialize progress bar
     pbar = tqdm(total=n_trials, desc="Optimizing XGBoost", 
                 bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {postfix}]')
     
-    # Create and run study with error handling
     study = optuna.create_study(direction='minimize')
     
     # Add some resilience to the optimization

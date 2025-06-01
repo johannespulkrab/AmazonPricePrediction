@@ -69,7 +69,7 @@ def objective(trial):
     return mae
 
 if __name__ == "__main__":
-    print("Starting optimized XGBoost hyperparameter optimization...")
+    print("Starting optimized XGBoost hyperparameter optimization")
     print(f"Data shapes: X_train={X_train.shape}, X_val={X_val.shape}")
     
     n_trials = 20 
@@ -79,19 +79,15 @@ if __name__ == "__main__":
     
     study = optuna.create_study(direction='minimize')
     
-    # Add some resilience to the optimization
     try:
         study.optimize(objective, n_trials=n_trials, n_jobs=1)
     except Exception as e:
         print(f"Optimization encountered an error: {e}")
-        print("Continuing with completed trials...")
     
-    # Check if we have any successful trials
     if len(study.trials) == 0 or study.best_value is None:
-        print("No successful trials completed!")
+        print("No successful trials completed")
         exit(1)
     
-    # Close progress bar
     pbar.close()
     
     # Get best parameters
@@ -100,14 +96,13 @@ if __name__ == "__main__":
         'objective': 'reg:squarederror',
         'eval_metric': 'mae',
         'random_state': 42,
-        'n_jobs': -1  # Use all cores for final model
+        'n_jobs': -1  
     })
     
-    print(f"\nOptimization completed!")
+    print(f"\nOptimization completed")
     print(f"Best MAE: {study.best_value:.5f}")
     print("Best hyperparameters:", study.best_params)
     
-    # Save best parameters
     with open(PARAMS_OUT, 'w') as f:
         json.dump(best_params, f, indent=2)
     

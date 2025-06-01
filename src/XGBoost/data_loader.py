@@ -51,12 +51,10 @@ def combine_features(numerical_features, text_features, metadata):
     if y is None:
         raise ValueError('Target variable y not found in metadata')
     
-    # Combine features using scipy's hstack
     X = hstack([numerical_features, text_features])
     
-    # Check dimensions
     if X.shape[0] != len(y):
-        raise ValueError(f"Feature matrix shape {X.shape} does not match target vector shape {y.shape}")
+        raise ValueError
     
     return X, y
 
@@ -68,7 +66,6 @@ def load_and_prepare_data(processed_dir="data/processed",
     try:
         if not force_rebuild:
             X = load_npz(assembled_path)
-            # Still need metadata for y
             data = load_amazon_data(processed_dir)
             metadata = data['metadata']
             y = metadata['y']
@@ -76,17 +73,14 @@ def load_and_prepare_data(processed_dir="data/processed",
             raise FileNotFoundError
     except (FileNotFoundError, ValueError):
         print("Assembling features...")
-        # Load all data components
         data = load_amazon_data(processed_dir)
         
-        # Combine features and get target
         X, y = combine_features(
             data['numerical_features'], 
             data['text_features'],  
             data['metadata']
         )
         
-        # Save assembled features
         save_npz(assembled_path, X)
         print(f"Features assembled and saved to {assembled_path}")
     
